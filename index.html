@@ -1,48 +1,61 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      padding: 20px;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="title">MarketEdge Dashboard</div>
-
-<div class="box">
-  <h3>Status</h3>
-  <p id="status">System Running...</p>
-</div>
-
-<div class="box">
-  <h3>Test Output</h3>
-  <p id="test">Waiting...</p>
-</div>
-
 <script>
-document.getElementById("status").innerText = "OK - JavaScript Working";
-document.getElementById("test").innerText = "Dashboard Loaded Successfully";
-</script>
 
-</body>
-</html>
+function getMockData() {
+  return {
+    nfp: {
+      value: 175000,
+      previous: 150000
+    },
+    cpi: {
+      value: 3.1,
+      previous: 3.4
+    }
+  };
+}
+
+function calculateNFP(nfp) {
+  let diff = nfp.value - nfp.previous;
+
+  if (diff > 20000) return 7;
+  if (diff > 0) return 5;
+  return 2;
+}
+
+function calculateCPI(cpi) {
+  let diff = cpi.value - cpi.previous;
+
+  if (diff < 0) return 7; // disinflation = USD bullish
+  if (diff === 0) return 5;
+  return 2;
+}
+
+function getBias(score) {
+  if (score >= 12) return "STRONG USD BULLISH";
+  if (score >= 9) return "MODERATE USD BULLISH";
+  if (score >= 6) return "NEUTRAL";
+  return "USD BEARISH";
+}
+
+function runEngine() {
+
+  const data = getMockData();
+
+  const nfpScore = calculateNFP(data.nfp);
+  const cpiScore = calculateCPI(data.cpi);
+
+  const total = nfpScore + cpiScore;
+
+  const bias = getBias(total);
+
+  document.getElementById("status").innerText = "ENGINE ACTIVE";
+
+  document.getElementById("test").innerHTML =
+    "NFP Score: " + nfpScore +
+    "<br>CPI Score: " + cpiScore +
+    "<br>Total: " + total +
+    "<br><b>" + bias + "</b>";
+}
+
+runEngine();
+
+</script>
