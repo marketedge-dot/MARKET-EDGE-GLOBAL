@@ -23,31 +23,45 @@ function scoreCPI(cpi) {
   return { score: 1, label: "INFLATION PRESSURE" };
 }
 
-function riskFilter(total) {
-  if (total >= 7) {
-    return { bias: "STRONG USD BULLISH", risk: "HIGH CONFIDENCE" };
+// CPI weighted higher than NFP (macro reality)
+function riskFilter(nfpScore, cpiScore) {
+
+  let weightedTotal = (cpiScore * 1.5) + (nfpScore * 1.0);
+
+  let bias = "";
+  let context = "";
+
+  if (weightedTotal >= 8) {
+    bias = "STRONG USD BULLISH";
+    context = "CPI-driven macro tightening bias";
   }
-  if (total >= 5) {
-    return { bias: "MODERATE USD BULLISH", risk: "MEDIUM CONFIDENCE" };
+  else if (weightedTotal >= 6) {
+    bias = "MODERATE USD BULLISH";
+    context = "Inflation dominance with labor support";
   }
-  if (total >= 3) {
-    return { bias: "NEUTRAL", risk: "NO TRADE ZONE" };
+  else if (weightedTotal >= 4) {
+    bias = "NEUTRAL";
+    context = "No clear macro dominance";
   }
-  return { bias: "USD BEARISH", risk: "REVERSAL WATCH" };
+  else {
+    bias = "USD BEARISH";
+    context = "Weak macro pressure";
+  }
+
+  return { bias, context, weightedTotal };
 }
 
 function run() {
   try {
+
     const data = getData();
 
     const nfp = scoreNFP(data.nfp);
     const cpi = scoreCPI(data.cpi);
 
-    const total = nfp.score + cpi.score;
+    const result = riskFilter(nfp.score, cpi.score);
 
-    const result = riskFilter(total);
-
-    document.getElementById("status").innerText = "ENGINE ACTIVE";
+    document.getElementById("status").innerText = "MACRO ENGINE ACTIVE";
 
     document.getElementById("nfp").innerText =
       `${nfp.label} | Score: ${nfp.score}`;
@@ -56,12 +70,12 @@ function run() {
       `${cpi.label} | Score: ${cpi.score}`;
 
     document.getElementById("bias").innerText =
-      `${result.bias} (${result.risk})`;
+      `${result.bias} | ${result.context}`;
 
     document.getElementById("gold").innerText =
       result.bias.includes("BULLISH")
-        ? "XAUUSD → DOWN 🔻 (USD STRONG)"
-        : "XAUUSD → UP 🔺 (USD WEAK)";
+        ? "XAUUSD → DOWN 🔻 (USD STRENGTH)"
+        : "XAUUSD → UP 🔺 (USD WEAKNESS)";
 
   } catch (e) {
     document.getElementById("status").innerText =
