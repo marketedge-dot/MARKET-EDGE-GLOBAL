@@ -1,31 +1,37 @@
-console.log("MarketEdge Probability Engine Loaded");
+console.log("MarketEdge API-Ready Engine Loaded");
 
 function getData() {
   return {
     regime: "risk_off",
 
     sentiment: {
-      fear: 0.7,
-      greed: 0.3
+      fear: 0.65,
+      greed: 0.35
     },
 
+    // API READY STRUCTURE (future FRED/BLS connection)
     nfp: {
-      actual: 180000,
-      expected: 150000
+      actual: null,
+      expected: null
     },
 
     cpi: {
-      actual: 3.0,
-      expected: 3.3
+      actual: null,
+      expected: null
     },
 
-    timeSinceEventMin: 12
+    timestamp: Date.now()
   };
 }
 
-// SURPRISE
+// SAFE VALUE HANDLER
+function safe(v, fallback = 0) {
+  return v === null || v === undefined ? fallback : v;
+}
+
+// SURPRISE MODEL
 function surprise(actual, expected) {
-  return actual - expected;
+  return safe(actual) - safe(expected);
 }
 
 // REGIME WEIGHTS
@@ -42,16 +48,19 @@ function getWeights(regime) {
   return { cpi: 1.5, nfp: 1.5 };
 }
 
-// SCORING
+// NFP SCORING
 function scoreNFP(nfp) {
   let s = surprise(nfp.actual, nfp.expected);
+
   if (s > 20000) return 4;
   if (s > 0) return 3;
   return 1;
 }
 
+// CPI SCORING
 function scoreCPI(cpi) {
   let s = surprise(cpi.actual, cpi.expected);
+
   if (s < -0.2) return 4;
   if (s < 0) return 3;
   if (s === 0) return 2;
@@ -73,13 +82,7 @@ function sentimentBoost(fear) {
   return 1.0;
 }
 
-// PROBABILITY CONVERSION (NEW CORE LOGIC)
-function toProbability(score) {
-  // converts engine score into probability space (0–100)
-  return Math.min(95, Math.max(5, score * 12.5));
-}
-
-// FINAL ENGINE
+// FINAL DECISION ENGINE (PROBABILITY BASED)
 function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
 
   let raw =
@@ -90,8 +93,8 @@ function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
 
   let adjusted = decayed * sentimentBoost(sentiment.fear);
 
-  let usdStrengthProb = toProbability(adjusted);
-  let usdWeaknessProb = 100 - usdStrengthProb;
+  let usdStrengthProb = Math.min(95, Math.max(5, adjusted * 12.5));
+  let usdWeakProb = 100 - usdStrengthProb;
 
   let bias = "";
   let context = "";
@@ -102,11 +105,11 @@ function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
   }
   else if (usdStrengthProb >= 55) {
     bias = "USD MODERATE BIAS";
-    context = "Slight edge USD strength";
+    context = "Slight USD advantage";
   }
   else if (usdStrengthProb >= 45) {
-    bias = "NO EDGE";
-    context = "Market balanced";
+    bias = "NO CLEAR EDGE";
+    context = "Balanced macro conditions";
   }
   else {
     bias = "USD WEAK BIAS";
@@ -117,16 +120,15 @@ function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
     bias,
     context,
     usdStrengthProb: usdStrengthProb.toFixed(1),
-    usdWeaknessProb: usdWeaknessProb.toFixed(1)
+    usdWeakProb: usdWeakProb.toFixed(1)
   };
 }
 
-// RUN
+// MAIN RUN
 function run() {
   try {
 
     const data = getData();
-
     const weights = getWeights(data.regime);
 
     const nfp = scoreNFP(data.nfp);
@@ -137,11 +139,11 @@ function run() {
       cpi,
       weights,
       data.sentiment,
-      data.timeSinceEventMin
+      12
     );
 
     document.getElementById("status").innerText =
-      "PROBABILITY ENGINE ACTIVE";
+      "MARKETEDGE ENGINE ACTIVE (API READY)";
 
     document.getElementById("nfp").innerText =
       `NFP Score: ${nfp}`;
@@ -153,7 +155,7 @@ function run() {
       `${result.bias} | ${result.context}`;
 
     document.getElementById("gold").innerText =
-      `USD Strength: ${result.usdStrengthProb}% | USD Weak: ${result.usdWeaknessProb}%`;
+      `USD Strength: ${result.usdStrengthProb}% | USD Weak: ${result.usdWeakProb}%`;
 
   } catch (e) {
     document.getElementById("status").innerText =
