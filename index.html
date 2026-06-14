@@ -1,67 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge Dashboard</title>
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .signal {
-      font-size: 18px;
-      color: #22c55e;
-    }
-
-    .warn {
-      color: #f59e0b;
-    }
-
-    .bad {
-      color: #ef4444;
-    }
-  </style>
-</head>
-
 <body>
 
-  <div class="title">MarketEdge Dashboard</div>
+<div class="title">MarketEdge Dashboard</div>
 
-  <div class="box">
-    <h3>Market Bias</h3>
-    <div class="signal">WAITING FOR DATA</div>
-  </div>
+<div class="box">
+  <h3>Market Bias Engine</h3>
+  <div id="bias" class="signal">CALCULATING...</div>
+</div>
 
-  <div class="box">
-    <h3>NFP Forecast</h3>
-    <p class="warn">No engine connected yet</p>
-  </div>
+<div class="box">
+  <h3>NFP Score</h3>
+  <div id="nfp">Loading...</div>
+</div>
 
-  <div class="box">
-    <h3>CPI Forecast</h3>
-    <p class="warn">No engine connected yet</p>
-  </div>
+<div class="box">
+  <h3>CPI Score</h3>
+  <div id="cpi">Loading...</div>
+</div>
 
-  <div class="box">
-    <h3>XAUUSD Impact</h3>
-    <p class="bad">Not active</p>
-  </div>
+<div class="box">
+  <h3>XAUUSD Impact</h3>
+  <div id="gold">Analyzing...</div>
+</div>
+
+<script>
+  // SIMPLE MARKETEDGE ENGINE (V1)
+
+  let nfpScore = 6;   // fake baseline (we improve later)
+  let cpiScore = 4;
+
+  let total = nfpScore + cpiScore;
+
+  let bias = "NEUTRAL";
+
+  if (total >= 10) bias = "STRONG USD BULLISH";
+  else if (total >= 7) bias = "MODERATE USD BULLISH";
+  else if (total >= 4) bias = "NEUTRAL";
+  else bias = "USD WEAK";
+
+  document.getElementById("nfp").innerText = "Score: " + nfpScore;
+  document.getElementById("cpi").innerText = "Score: " + cpiScore;
+  document.getElementById("bias").innerText = bias;
+
+  if (bias.includes("BULLISH")) {
+    document.getElementById("gold").innerText = "XAUUSD likely DOWN 🔻";
+  } else if (bias.includes("WEAK")) {
+    document.getElementById("gold").innerText = "XAUUSD likely UP 🔺";
+  } else {
+    document.getElementById("gold").innerText = "NO CLEAR DIRECTION";
+  }
+</script>
 
 </body>
-</html>
