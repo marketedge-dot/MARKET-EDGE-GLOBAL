@@ -1,74 +1,82 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      padding: 20px;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .ok {
-      color: #22c55e;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="title">MarketEdge Dashboard</div>
-
-<div class="box">
-  <h3>Status</h3>
-  <p id="status">Loading...</p>
-</div>
-
-<div class="box">
-  <h3>Engine Output</h3>
-  <p id="output">Waiting...</p>
-</div>
-
 <script>
-try {
-  document.getElementById("status").innerText = "SYSTEM OK";
 
-  let nfp = 6;
-  let cpi = 4;
-  let total = nfp + cpi;
+function getData() {
+  // This is your future real API layer
+  return {
+    nfp: {
+      value: 175000,
+      previous: 150000,
+      timestamp: "latest"
+    },
+    cpi: {
+      value: 3.1,
+      previous: 3.4,
+      timestamp: "latest"
+    }
+  };
+}
 
-  let bias = "NEUTRAL";
+function validateData(data) {
+  // DATA FRESHNESS RULE (VERY IMPORTANT IN REAL SYSTEMS)
 
-  if (total >= 10) bias = "STRONG USD BULLISH";
-  else if (total >= 7) bias = "MODERATE USD BULLISH";
-  else if (total >= 4) bias = "NEUTRAL";
-  else bias = "USD BEARISH";
+  if (!data.nfp.value || !data.cpi.value) {
+    return { valid: false, reason: "Missing data" };
+  }
+
+  return { valid: true };
+}
+
+function scoreNFP(nfp) {
+  let change = nfp.value - nfp.previous;
+
+  if (change > 20000) return 7;
+  if (change > 0) return 5;
+  return 2;
+}
+
+function scoreCPI(cpi) {
+  let change = cpi.value - cpi.previous;
+
+  if (change < 0) return 7; // disinflation = USD bullish
+  if (change === 0) return 5;
+  return 2;
+}
+
+function getBias(total) {
+  if (total >= 12) return "STRONG USD BULLISH";
+  if (total >= 9) return "MODERATE USD BULLISH";
+  if (total >= 6) return "NEUTRAL";
+  return "USD BEARISH";
+}
+
+function runEngine() {
+
+  const data = getData();
+
+  const check = validateData(data);
+
+  if (!check.valid) {
+    document.getElementById("status").innerText =
+      "DATA ERROR: " + check.reason;
+    return;
+  }
+
+  const nfpScore = scoreNFP(data.nfp);
+  const cpiScore = scoreCPI(data.cpi);
+
+  const total = nfpScore + cpiScore;
+
+  const bias = getBias(total);
+
+  document.getElementById("status").innerText = "ENGINE ACTIVE";
 
   document.getElementById("output").innerHTML =
-    "NFP: " + nfp +
-    "<br>CPI: " + cpi +
-    "<br>Total: " + total +
+    "NFP Score: " + nfpScore +
+    "<br>CPI Score: " + cpiScore +
+    "<br>Total Score: " + total +
     "<br><b>" + bias + "</b>";
-
-} catch (error) {
-  document.getElementById("status").innerText = "ERROR: " + error.message;
 }
-</script>
 
-</body>
-</html>
+runEngine();
+
+</script>
