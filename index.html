@@ -1,75 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MarketEdge Safe Mode</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .amber { color: #f59e0b; }
+  </style>
+</head>
+
+<body>
+
+<div class="title">MarketEdge SAFE MODE</div>
+
+<div class="box">
+  <p id="status">Loading system...</p>
+</div>
+
+<div class="box">
+  <p id="nfp">NFP loading...</p>
+  <p id="cpi">CPI loading...</p>
+</div>
+
+<div class="box">
+  <p id="bias">Bias loading...</p>
+</div>
+
+<div class="box">
+  <p id="gold">Gold impact loading...</p>
+</div>
+
 <script>
+try {
 
-// 1. STRUCTURED DATA MODEL (this is how real systems think)
-const data = {
-  nfp: {
-    current: 175000,
-    previous: 150000
-  },
-  cpi: {
-    current: 3.1,
-    previous: 3.4
-  }
-};
+  // SIMPLE SAFE DATA
+  let nfpCurrent = 175000;
+  let nfpPrevious = 150000;
 
-// 2. CALCULATE REAL ECONOMIC CHANGE (not random scores)
-function calculateChange(current, previous) {
-  return current - previous;
-}
+  let cpiCurrent = 3.1;
+  let cpiPrevious = 3.4;
 
-// 3. NFP IMPACT ENGINE
-function nfpImpact(nfp) {
-  let change = calculateChange(nfp.current, nfp.previous);
+  let nfpChange = nfpCurrent - nfpPrevious;
+  let cpiChange = cpiCurrent - cpiPrevious;
 
-  if (change > 20000) return { score: 3, label: "VERY STRONG JOBS" };
-  if (change > 0) return { score: 2, label: "STABLE JOBS" };
-  return { score: 1, label: "WEAK JOBS" };
-}
+  let nfpScore = nfpChange > 0 ? 2 : 1;
+  let cpiScore = cpiChange < 0 ? 2 : 1;
 
-// 4. CPI IMPACT ENGINE
-function cpiImpact(cpi) {
-  let change = calculateChange(cpi.current, cpi.previous);
+  let total = nfpScore + cpiScore;
 
-  if (change < 0) return { score: 3, label: "DISINFLATION (USD STRONG)" };
-  if (change === 0) return { score: 2, label: "STABLE INFLATION" };
-  return { score: 1, label: "INFLATION PRESSURE" };
-}
+  let bias = "NEUTRAL";
 
-// 5. MARKET BIAS ENGINE (THIS IS YOUR CORE LOGIC)
-function getBias(totalScore) {
-  if (totalScore >= 5) return "STRONG USD BULLISH";
-  if (totalScore === 4) return "MODERATE USD BULLISH";
-  if (totalScore === 3) return "NEUTRAL";
-  return "USD BEARISH";
-}
+  if (total >= 4) bias = "STRONG USD BULLISH";
+  else if (total === 3) bias = "MODERATE USD BULLISH";
+  else bias = "USD WEAK";
 
-// 6. RUN ENGINE
-function run() {
+  document.getElementById("status").innerText = "SYSTEM RUNNING OK";
 
-  const nfp = nfpImpact(data.nfp);
-  const cpi = cpiImpact(data.cpi);
+  document.getElementById("nfp").innerText = "NFP Score: " + nfpScore;
+  document.getElementById("cpi").innerText = "CPI Score: " + cpiScore;
 
-  const total = nfp.score + cpi.score;
-  const bias = getBias(total);
+  document.getElementById("bias").innerHTML = "<b>" + bias + "</b>";
 
-  // UI OUTPUT
-  document.getElementById("status").innerText = "ENGINE ACTIVE";
-
-  document.getElementById("nfp").innerHTML =
-    nfp.label + " (Score: " + nfp.score + ")";
-
-  document.getElementById("cpi").innerHTML =
-    cpi.label + " (Score: " + cpi.score + ")";
-
-  document.getElementById("bias").innerHTML =
-    "<b>" + bias + "</b>";
-
-  document.getElementById("gold").innerHTML =
+  document.getElementById("gold").innerText =
     bias.includes("BULLISH")
-      ? "XAUUSD → DOWN 🔻 (USD STRENGTH)"
-      : "XAUUSD → UP 🔺 (USD WEAKNESS)";
+      ? "XAUUSD → DOWN 🔻"
+      : "XAUUSD → UP 🔺";
+
+} catch (e) {
+  document.body.innerHTML =
+    "<h2 style='color:red'>ERROR:</h2><pre>" + e.message + "</pre>";
 }
-
-run();
-
 </script>
+
+</body>
+</html>
