@@ -1,78 +1,76 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MarketEdge Dashboard</title>
 
-function getData() {
-  // This is now your "data input layer"
-  // Later we replace this with real APIs
-
-  return {
-    nfp: {
-      value: 0,
-      previous: 0,
-      surprise: 0
-    },
-    cpi: {
-      value: 0,
-      previous: 0,
-      surprise: 0
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
     }
-  };
-}
 
-function calculateImpact(value, previous) {
-  return value - previous;
-}
+    .title {
+      font-size: 26px;
+      font-weight: bold;
+      background: linear-gradient(90deg,#22c55e,#38bdf8,#a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-function scoreNFP(nfp) {
-  let surprise = calculateImpact(nfp.value, nfp.previous);
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
 
-  if (surprise > 20000) return { score: 3, label: "VERY STRONG JOBS" };
-  if (surprise > 0) return { score: 2, label: "POSITIVE JOBS" };
-  return { score: 1, label: "WEAK JOBS" };
-}
+    .label {
+      color: #94a3b8;
+      font-size: 13px;
+    }
 
-function scoreCPI(cpi) {
-  let surprise = calculateImpact(cpi.value, cpi.previous);
+    .value {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+  </style>
+</head>
 
-  if (surprise < 0) return { score: 3, label: "DISINFLATION (USD STRONG)" };
-  if (surprise === 0) return { score: 2, label: "STABLE INFLATION" };
-  return { score: 1, label: "INFLATION PRESSURE" };
-}
+<body>
 
-function getBias(total) {
-  if (total >= 5) return "STRONG USD BULLISH";
-  if (total === 4) return "MODERATE USD BULLISH";
-  if (total === 3) return "NEUTRAL";
-  return "USD BEARISH";
-}
+<div class="title">MarketEdge Dashboard</div>
 
-function run() {
+<div class="box">
+  <div class="label">System Status</div>
+  <div class="value" id="status">Loading...</div>
+</div>
 
-  const data = getData();
+<div class="box">
+  <div class="label">NFP Signal</div>
+  <div class="value" id="nfp">...</div>
+</div>
 
-  const nfp = scoreNFP(data.nfp);
-  const cpi = scoreCPI(data.cpi);
+<div class="box">
+  <div class="label">CPI Signal</div>
+  <div class="value" id="cpi">...</div>
+</div>
 
-  const total = nfp.score + cpi.score;
+<div class="box">
+  <div class="label">Market Bias</div>
+  <div class="value" id="bias">...</div>
+</div>
 
-  const bias = getBias(total);
+<div class="box">
+  <div class="label">XAUUSD Impact</div>
+  <div class="value" id="gold">...</div>
+</div>
 
-  document.getElementById("status").innerText = "ENGINE READY (INPUT MODE)";
+<!-- IMPORTANT: external engine -->
+<script src="engine.js"></script>
 
-  document.getElementById("nfp").innerHTML =
-    nfp.label + " | Score: " + nfp.score;
-
-  document.getElementById("cpi").innerHTML =
-    cpi.label + " | Score: " + cpi.score;
-
-  document.getElementById("bias").innerHTML =
-    "<b>" + bias + "</b>";
-
-  document.getElementById("gold").innerHTML =
-    bias.includes("BULLISH")
-      ? "XAUUSD → DOWN 🔻"
-      : "XAUUSD → UP 🔺";
-}
-
-run();
-
-</script>
+</body>
+</html>
