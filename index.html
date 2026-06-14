@@ -1,61 +1,74 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MarketEdge</title>
 
-function getMockData() {
-  return {
-    nfp: {
-      value: 175000,
-      previous: 150000
-    },
-    cpi: {
-      value: 3.1,
-      previous: 3.4
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
     }
-  };
-}
 
-function calculateNFP(nfp) {
-  let diff = nfp.value - nfp.previous;
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
 
-  if (diff > 20000) return 7;
-  if (diff > 0) return 5;
-  return 2;
-}
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
 
-function calculateCPI(cpi) {
-  let diff = cpi.value - cpi.previous;
+    .ok {
+      color: #22c55e;
+    }
+  </style>
+</head>
 
-  if (diff < 0) return 7; // disinflation = USD bullish
-  if (diff === 0) return 5;
-  return 2;
-}
+<body>
 
-function getBias(score) {
-  if (score >= 12) return "STRONG USD BULLISH";
-  if (score >= 9) return "MODERATE USD BULLISH";
-  if (score >= 6) return "NEUTRAL";
-  return "USD BEARISH";
-}
+<div class="title">MarketEdge Dashboard</div>
 
-function runEngine() {
+<div class="box">
+  <h3>Status</h3>
+  <p id="status">Loading...</p>
+</div>
 
-  const data = getMockData();
+<div class="box">
+  <h3>Engine Output</h3>
+  <p id="output">Waiting...</p>
+</div>
 
-  const nfpScore = calculateNFP(data.nfp);
-  const cpiScore = calculateCPI(data.cpi);
+<script>
+try {
+  document.getElementById("status").innerText = "SYSTEM OK";
 
-  const total = nfpScore + cpiScore;
+  let nfp = 6;
+  let cpi = 4;
+  let total = nfp + cpi;
 
-  const bias = getBias(total);
+  let bias = "NEUTRAL";
 
-  document.getElementById("status").innerText = "ENGINE ACTIVE";
+  if (total >= 10) bias = "STRONG USD BULLISH";
+  else if (total >= 7) bias = "MODERATE USD BULLISH";
+  else if (total >= 4) bias = "NEUTRAL";
+  else bias = "USD BEARISH";
 
-  document.getElementById("test").innerHTML =
-    "NFP Score: " + nfpScore +
-    "<br>CPI Score: " + cpiScore +
+  document.getElementById("output").innerHTML =
+    "NFP: " + nfp +
+    "<br>CPI: " + cpi +
     "<br>Total: " + total +
     "<br><b>" + bias + "</b>";
+
+} catch (error) {
+  document.getElementById("status").innerText = "ERROR: " + error.message;
 }
-
-runEngine();
-
 </script>
+
+</body>
+</html>
