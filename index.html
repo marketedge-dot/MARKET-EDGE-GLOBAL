@@ -1,86 +1,68 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge Dashboard</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .gradient-title {
-      font-size: 26px;
-      font-weight: bold;
-      background: linear-gradient(90deg, #22c55e, #38bdf8, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .box {
-      background: linear-gradient(145deg, #1e293b, #0f172a);
-      border: 1px solid #334155;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="gradient-title">MarketEdge Dashboard</div>
-
-<div class="box">
-  <h3>Market Bias</h3>
-  <div id="bias">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>NFP</h3>
-  <div id="nfp">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>CPI</h3>
-  <div id="cpi">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>XAUUSD Impact</h3>
-  <div id="gold">Loading...</div>
-</div>
-
 <script>
-function run() {
 
-  let nfp = 6;
-  let cpi = 4;
+async function fetchData() {
 
-  let total = nfp + cpi;
+  // THIS IS YOUR FUTURE API STRUCTURE
+  // We will replace this with real endpoints later
 
-  let bias = "NEUTRAL";
+  return {
+    nfp: {
+      value: 175000,
+      previous: 150000,
+      surprise: 25000
+    },
+    cpi: {
+      value: 3.1,
+      previous: 3.4,
+      surprise: -0.3
+    }
+  };
+}
 
-  if (total >= 10) bias = "USD STRONG BULLISH";
-  else if (total >= 7) bias = "MODERATE BULLISH";
-  else if (total >= 4) bias = "NEUTRAL";
-  else bias = "USD WEAK";
+function scoreNFP(nfp) {
+  if (nfp.surprise > 20000) return 7;
+  if (nfp.surprise > 0) return 5;
+  return 2;
+}
 
-  document.getElementById("nfp").innerText = "Score: " + nfp;
-  document.getElementById("cpi").innerText = "Score: " + cpi;
+function scoreCPI(cpi) {
+  if (cpi.surprise < 0) return 7; // disinflation = USD bullish
+  if (cpi.surprise === 0) return 5;
+  return 2;
+}
+
+function generateBias(total) {
+  if (total >= 12) return "STRONG USD BULLISH";
+  if (total >= 9) return "MODERATE USD BULLISH";
+  if (total >= 6) return "NEUTRAL";
+  return "USD BEARISH";
+}
+
+async function run() {
+
+  const data = await fetchData();
+
+  const nfpScore = scoreNFP(data.nfp);
+  const cpiScore = scoreCPI(data.cpi);
+
+  const total = nfpScore + cpiScore;
+
+  const bias = generateBias(total);
+
+  document.getElementById("nfp").innerText =
+    `NFP: ${data.nfp.value} | Score: ${nfpScore}`;
+
+  document.getElementById("cpi").innerText =
+    `CPI: ${data.cpi.value}% | Score: ${cpiScore}`;
+
   document.getElementById("bias").innerText = bias;
 
   document.getElementById("gold").innerText =
     bias.includes("BULLISH")
-      ? "XAUUSD DOWN 🔻"
-      : "XAUUSD UP 🔺";
+      ? "XAUUSD DOWN 🔻 (USD Strength)"
+      : "XAUUSD UP 🔺 (USD Weakness)";
 }
 
 run();
-</script>
 
-</body>
-</html>
+</script>
