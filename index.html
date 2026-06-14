@@ -1,68 +1,48 @@
-<script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MarketEdge</title>
 
-async function fetchData() {
-
-  // THIS IS YOUR FUTURE API STRUCTURE
-  // We will replace this with real endpoints later
-
-  return {
-    nfp: {
-      value: 175000,
-      previous: 150000,
-      surprise: 25000
-    },
-    cpi: {
-      value: 3.1,
-      previous: 3.4,
-      surprise: -0.3
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
     }
-  };
-}
 
-function scoreNFP(nfp) {
-  if (nfp.surprise > 20000) return 7;
-  if (nfp.surprise > 0) return 5;
-  return 2;
-}
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
 
-function scoreCPI(cpi) {
-  if (cpi.surprise < 0) return 7; // disinflation = USD bullish
-  if (cpi.surprise === 0) return 5;
-  return 2;
-}
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
 
-function generateBias(total) {
-  if (total >= 12) return "STRONG USD BULLISH";
-  if (total >= 9) return "MODERATE USD BULLISH";
-  if (total >= 6) return "NEUTRAL";
-  return "USD BEARISH";
-}
+<body>
 
-async function run() {
+<div class="title">MarketEdge Dashboard</div>
 
-  const data = await fetchData();
+<div class="box">
+  <h3>Status</h3>
+  <p id="status">System Running...</p>
+</div>
 
-  const nfpScore = scoreNFP(data.nfp);
-  const cpiScore = scoreCPI(data.cpi);
+<div class="box">
+  <h3>Test Output</h3>
+  <p id="test">Waiting...</p>
+</div>
 
-  const total = nfpScore + cpiScore;
-
-  const bias = generateBias(total);
-
-  document.getElementById("nfp").innerText =
-    `NFP: ${data.nfp.value} | Score: ${nfpScore}`;
-
-  document.getElementById("cpi").innerText =
-    `CPI: ${data.cpi.value}% | Score: ${cpiScore}`;
-
-  document.getElementById("bias").innerText = bias;
-
-  document.getElementById("gold").innerText =
-    bias.includes("BULLISH")
-      ? "XAUUSD DOWN 🔻 (USD Strength)"
-      : "XAUUSD UP 🔺 (USD Weakness)";
-}
-
-run();
-
+<script>
+document.getElementById("status").innerText = "OK - JavaScript Working";
+document.getElementById("test").innerText = "Dashboard Loaded Successfully";
 </script>
+
+</body>
+</html>
