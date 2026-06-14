@@ -1,28 +1,29 @@
-function riskFilter(totalScore) {
+function run() {
 
-  if (totalScore >= 7) {
-    return {
-      bias: "STRONG USD BULLISH",
-      risk: "HIGH CONFIDENCE TRADE"
-    };
-  }
+  const data = getData();
 
-  if (totalScore >= 5) {
-    return {
-      bias: "MODERATE USD BULLISH",
-      risk: "MEDIUM CONFIDENCE"
-    };
-  }
+  const nfp = scoreNFP(data.nfp);
+  const cpi = scoreCPI(data.cpi);
 
-  if (totalScore >= 3) {
-    return {
-      bias: "NEUTRAL",
-      risk: "NO TRADE ZONE"
-    };
-  }
+  const total = nfp.score + cpi.score;
 
-  return {
-    bias: "USD BEARISH",
-    risk: "REVERSAL WATCH"
-  };
+  const result = riskFilter(total);
+
+  document.getElementById("status").innerText = "REAL ENGINE ACTIVE";
+
+  document.getElementById("nfp").innerText =
+    nfp.label + " | Score: " + nfp.score;
+
+  document.getElementById("cpi").innerText =
+    cpi.label + " | Score: " + cpi.score;
+
+  document.getElementById("bias").innerText =
+    result.bias + " (" + result.risk + ")";
+
+  document.getElementById("gold").innerText =
+    result.bias.includes("BULLISH")
+      ? "XAUUSD → DOWN 🔻 (USD STRENGTH)"
+      : "XAUUSD → UP 🔺 (USD WEAKNESS)";
 }
+
+run();
