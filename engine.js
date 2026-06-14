@@ -1,17 +1,28 @@
-function scoreNFP(nfp) {
-  let s = nfp.surprise;
+function riskFilter(totalScore) {
 
-  if (s > 25000) return { score: 4, label: "VERY STRONG JOBS" };
-  if (s > 10000) return { score: 3, label: "STRONG JOBS" };
-  if (s > 0) return { score: 2, label: "SLIGHTLY POSITIVE" };
-  return { score: 1, label: "WEAK JOBS" };
-}
+  if (totalScore >= 7) {
+    return {
+      bias: "STRONG USD BULLISH",
+      risk: "HIGH CONFIDENCE TRADE"
+    };
+  }
 
-function scoreCPI(cpi) {
-  let s = cpi.surprise;
+  if (totalScore >= 5) {
+    return {
+      bias: "MODERATE USD BULLISH",
+      risk: "MEDIUM CONFIDENCE"
+    };
+  }
 
-  if (s < -0.3) return { score: 4, label: "DISINFLATION (USD VERY STRONG)" };
-  if (s < 0) return { score: 3, label: "DISINFLATION" };
-  if (s === 0) return { score: 2, label: "STABLE INFLATION" };
-  return { score: 1, label: "INFLATION PRESSURE" };
+  if (totalScore >= 3) {
+    return {
+      bias: "NEUTRAL",
+      risk: "NO TRADE ZONE"
+    };
+  }
+
+  return {
+    bias: "USD BEARISH",
+    risk: "REVERSAL WATCH"
+  };
 }
