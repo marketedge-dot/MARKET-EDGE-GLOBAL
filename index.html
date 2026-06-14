@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>MarketEdge</title>
+  <title>MarketEdge Dashboard</title>
 
   <style>
     body {
@@ -11,31 +11,89 @@
       padding: 20px;
     }
 
+    .title {
+      font-size: 26px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #22c55e, #38bdf8, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
     .box {
       background: #1e293b;
       padding: 15px;
       margin: 10px 0;
-      border-radius: 10px;
+      border-radius: 12px;
+      border: 1px solid #334155;
     }
+
+    .label {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .value {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .green { color: #22c55e; }
+    .red { color: #ef4444; }
+    .amber { color: #f59e0b; }
   </style>
 </head>
 
 <body>
 
-<h2>MarketEdge Dashboard</h2>
+<div class="title">MarketEdge Dashboard</div>
 
 <div class="box">
-  <p id="status">Loading...</p>
+  <div class="label">System Status</div>
+  <div class="value green" id="status">ACTIVE</div>
 </div>
 
 <div class="box">
-  <p id="output">Waiting...</p>
+  <div class="label">NFP Signal</div>
+  <div class="value amber" id="nfp">Loading...</div>
+</div>
+
+<div class="box">
+  <div class="label">CPI Signal</div>
+  <div class="value amber" id="cpi">Loading...</div>
+</div>
+
+<div class="box">
+  <div class="label">Market Bias</div>
+  <div class="value" id="bias">Calculating...</div>
+</div>
+
+<div class="box">
+  <div class="label">XAUUSD Impact</div>
+  <div class="value" id="gold">Analyzing...</div>
 </div>
 
 <script>
-document.getElementById("status").innerText = "PAGE WORKING";
+let nfp = 6;
+let cpi = 4;
 
-document.getElementById("output").innerText = "SYSTEM STABLE - READY TO BUILD";
+let total = nfp + cpi;
+
+let bias = "NEUTRAL";
+
+if (total >= 10) bias = "STRONG USD BULLISH";
+else if (total >= 7) bias = "MODERATE USD BULLISH";
+else if (total >= 4) bias = "NEUTRAL";
+else bias = "USD BEARISH";
+
+document.getElementById("nfp").innerText = "Score: " + nfp;
+document.getElementById("cpi").innerText = "Score: " + cpi;
+document.getElementById("bias").innerText = bias;
+
+document.getElementById("gold").innerText =
+  bias.includes("BULLISH")
+    ? "XAUUSD → DOWN 🔻"
+    : "XAUUSD → UP 🔺";
 </script>
 
 </body>
