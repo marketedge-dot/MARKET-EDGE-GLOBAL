@@ -1,58 +1,78 @@
-<script>
-async function getMockEconomicData() {
-  // IMPORTANT: This simulates real API structure first
-  // Later we replace with real endpoints (FRED/BLS)
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MarketEdge Dashboard</title>
 
-  return {
-    nfp: {
-      value: 175000,
-      previous: 150000,
-      trend: "UP"
-    },
-    cpi: {
-      value: 3.1,
-      previous: 3.4,
-      trend: "DOWN"
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 20px;
     }
-  };
-}
 
-function calculateScore(data) {
-  let nfpScore = 0;
-  let cpiScore = 0;
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
 
-  // NFP logic
-  if (data.nfp.value > data.nfp.previous) nfpScore = 6;
-  else nfpScore = 3;
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
 
-  // CPI logic
-  if (data.cpi.value < data.cpi.previous) cpiScore = 6;
-  else cpiScore = 3;
+    .signal {
+      font-size: 18px;
+      color: #22c55e;
+    }
+  </style>
+</head>
 
-  return { nfpScore, cpiScore };
-}
+<body>
 
-function generateBias(total) {
-  if (total >= 10) return "STRONG USD BULLISH";
-  if (total >= 7) return "MODERATE USD BULLISH";
-  if (total >= 4) return "NEUTRAL";
-  return "USD BEARISH";
-}
+<div class="title">MarketEdge Dashboard</div>
 
-async function runEngine() {
-  const data = await getMockEconomicData();
+<div class="box">
+  <h3>Market Bias Engine</h3>
+  <div id="bias">Loading...</div>
+</div>
 
-  const scores = calculateScore(data);
-  const total = scores.nfpScore + scores.cpiScore;
+<div class="box">
+  <h3>NFP</h3>
+  <div id="nfp">Loading...</div>
+</div>
 
-  const bias = generateBias(total);
+<div class="box">
+  <h3>CPI</h3>
+  <div id="cpi">Loading...</div>
+</div>
 
-  document.getElementById("nfp").innerText =
-    "NFP: " + data.nfp.value + " (Score " + scores.nfpScore + ")";
+<div class="box">
+  <h3>XAUUSD Impact</h3>
+  <div id="gold">Loading...</div>
+</div>
 
-  document.getElementById("cpi").innerText =
-    "CPI: " + data.cpi.value + "% (Score " + scores.cpiScore + ")";
+<script>
+function run() {
 
+  let nfpScore = 6;
+  let cpiScore = 4;
+
+  let total = nfpScore + cpiScore;
+
+  let bias = "NEUTRAL";
+
+  if (total >= 10) bias = "STRONG USD BULLISH";
+  else if (total >= 7) bias = "MODERATE USD BULLISH";
+  else if (total >= 4) bias = "NEUTRAL";
+  else bias = "USD WEAK";
+
+  document.getElementById("nfp").innerText = "Score: " + nfpScore;
+  document.getElementById("cpi").innerText = "Score: " + cpiScore;
   document.getElementById("bias").innerText = bias;
 
   document.getElementById("gold").innerText =
@@ -61,5 +81,8 @@ async function runEngine() {
       : "XAUUSD likely UP 🔺";
 }
 
-runEngine();
+run();
 </script>
+
+</body>
+</html>
