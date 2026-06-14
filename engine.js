@@ -1,63 +1,104 @@
-console.log("MarketEdge Event Engine Loaded");
+console.log("MarketEdge Macro Reality Engine Loaded");
 
 function getData() {
   return {
+    regime: "inflation_focus", // can be: inflation_focus | growth_focus | risk_off
+
     nfp: {
       actual: 180000,
-      expected: 150000,
-      previous: 150000
+      expected: 150000
     },
+
     cpi: {
       actual: 3.0,
-      expected: 3.3,
-      previous: 3.4
+      expected: 3.3
     }
   };
 }
 
-// SURPRISE = ACTUAL - EXPECTED (this is what moves markets)
+// SURPRISE CORE
 function surprise(actual, expected) {
   return actual - expected;
 }
 
+// REGIME WEIGHTING (THIS IS THE REAL IMPROVEMENT)
+function getWeights(regime) {
+
+  if (regime === "inflation_focus") {
+    return { cpi: 2.0, nfp: 1.0 };
+  }
+
+  if (regime === "growth_focus") {
+    return { cpi: 1.0, nfp: 2.0 };
+  }
+
+  return { cpi: 1.5, nfp: 1.5 }; // risk_off / neutral
+}
+
+// NFP SCORE
 function scoreNFP(nfp) {
   let s = surprise(nfp.actual, nfp.expected);
 
-  if (s > 20000) return { score: 4, label: "VERY STRONG JOBS SURPRISE" };
+  if (s > 20000) return { score: 4, label: "STRONG JOBS SURPRISE" };
   if (s > 0) return { score: 3, label: "POSITIVE JOBS SURPRISE" };
-  return { score: 1, label: "NEGATIVE JOBS SURPRISE" };
+  return { score: 1, label: "WEAK JOBS SURPRISE" };
 }
 
+// CPI SCORE
 function scoreCPI(cpi) {
   let s = surprise(cpi.actual, cpi.expected);
 
-  if (s < -0.2) return { score: 4, label: "DISINFLATION SURPRISE (USD STRONG)" };
-  if (s < 0) return { score: 3, label: "SLIGHTLY LOWER INFLATION" };
+  if (s < -0.2) return { score: 4, label: "DISINFLATION (USD STRONG)" };
+  if (s < 0) return { score: 3, label: "LOWER INFLATION" };
   if (s === 0) return { score: 2, label: "IN-LINE INFLATION" };
-  return { score: 1, label: "HOT INFLATION SURPRISE" };
+  return { score: 1, label: "HOT INFLATION" };
 }
 
-function riskFilter(nfpScore, cpiScore) {
+// FINAL DECISION ENGINE
+function riskFilter(nfpScore, cpiScore, weights) {
 
-  let total = (cpiScore * 1.5) + (nfpScore * 1.0);
+  let weighted =
+    (cpiScore * weights.cpi) +
+    (nfpScore * weights.nfp);
 
-  if (total >= 8) return { bias: "STRONG USD BULLISH", context: "Inflation-led regime" };
-  if (total >= 6) return { bias: "MODERATE USD BULLISH", context: "Mixed macro strength" };
-  if (total >= 4) return { bias: "NEUTRAL", context: "No dominance" };
-  return { bias: "USD BEARISH", context: "Weak macro pressure" };
+  let bias = "";
+  let context = "";
+
+  if (weighted >= 8) {
+    bias = "STRONG USD BULLISH";
+    context = "Macro dominance detected";
+  }
+  else if (weighted >= 6) {
+    bias = "MODERATE USD BULLISH";
+    context = "Mixed macro pressure";
+  }
+  else if (weighted >= 4) {
+    bias = "NEUTRAL";
+    context = "No clear regime dominance";
+  }
+  else {
+    bias = "USD BEARISH";
+    context = "Weak macro structure";
+  }
+
+  return { bias, context, weighted };
 }
 
+// RUN ENGINE
 function run() {
   try {
 
     const data = getData();
 
+    const weights = getWeights(data.regime);
+
     const nfp = scoreNFP(data.nfp);
     const cpi = scoreCPI(data.cpi);
 
-    const result = riskFilter(nfp.score, cpi.score);
+    const result = riskFilter(nfp.score, cpi.score, weights);
 
-    document.getElementById("status").innerText = "EVENT-DRIVEN ENGINE ACTIVE";
+    document.getElementById("status").innerText =
+      "MACRO REALITY ENGINE ACTIVE";
 
     document.getElementById("nfp").innerText =
       `${nfp.label}`;
@@ -70,8 +111,8 @@ function run() {
 
     document.getElementById("gold").innerText =
       result.bias.includes("BULLISH")
-        ? "XAUUSD → DOWN 🔻 (USD STRONG)"
-        : "XAUUSD → UP 🔺 (USD WEAK)";
+        ? "XAUUSD → DOWN 🔻 (USD DOMINANCE)"
+        : "XAUUSD → UP 🔺 (USD WEAKNESS)";
 
   } catch (e) {
     document.getElementById("status").innerText =
