@@ -1,10 +1,14 @@
-console.log("MarketEdge Reaction Engine Loaded");
+console.log("MarketEdge Sentiment Regime Engine Loaded");
 
 function getData() {
   return {
-    regime: "inflation_focus",
+    regime: "risk_off", // risk_on | risk_off | inflation_focus | growth_focus
 
-    // event data
+    sentiment: {
+      fear: 0.7,   // 0 → calm, 1 → panic
+      greed: 0.3
+    },
+
     nfp: {
       actual: 180000,
       expected: 150000
@@ -15,8 +19,7 @@ function getData() {
       expected: 3.3
     },
 
-    // TIME CONTEXT (NEW IMPORTANT PART)
-    timeSinceEventMin: 12 // simulate minutes after release
+    timeSinceEventMin: 12
   };
 }
 
@@ -25,15 +28,32 @@ function surprise(actual, expected) {
   return actual - expected;
 }
 
-// WEIGHTS BASED ON REGIME
+// REGIME WEIGHTS (CORE LOGIC SHIFT)
 function getWeights(regime) {
+
   if (regime === "inflation_focus") {
-    return { cpi: 2.0, nfp: 1.0 };
+    return { cpi: 2.2, nfp: 1.0 };
   }
+
   if (regime === "growth_focus") {
-    return { cpi: 1.0, nfp: 2.0 };
+    return { cpi: 1.0, nfp: 2.2 };
   }
+
+  if (regime === "risk_off") {
+    return { cpi: 1.5, nfp: 1.5 };
+  }
+
   return { cpi: 1.5, nfp: 1.5 };
+}
+
+// SENTIMENT IMPACT MODIFIER (NEW)
+function sentimentModifier(sentiment) {
+
+  let panic = sentiment.fear;
+
+  if (panic > 0.7) return 1.3;   // panic amplifies moves
+  if (panic > 0.4) return 1.1;
+  return 1.0;
 }
 
 // EVENT SCORING
@@ -54,24 +74,17 @@ function scoreCPI(cpi) {
   return 1;
 }
 
-// TIME DECAY MODEL (THIS IS THE REAL UPGRADE)
+// TIME DECAY
 function timeDecay(score, minutes) {
 
-  // first reaction = strong
-  if (minutes < 5) return score * 1.2;
-
-  // confirmation phase
+  if (minutes < 5) return score * 1.25;
   if (minutes < 30) return score * 1.0;
-
-  // fading phase
   if (minutes < 120) return score * 0.7;
-
-  // stale phase
   return score * 0.4;
 }
 
 // FINAL ENGINE
-function riskFilter(nfpScore, cpiScore, weights, minutes) {
+function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
 
   let raw =
     (cpiScore * weights.cpi) +
@@ -79,24 +92,27 @@ function riskFilter(nfpScore, cpiScore, weights, minutes) {
 
   let adjusted = timeDecay(raw, minutes);
 
+  // sentiment amplification
+  adjusted = adjusted * sentimentModifier(sentiment);
+
   let bias = "";
   let context = "";
 
   if (adjusted >= 8) {
     bias = "STRONG USD BULLISH";
-    context = "Fresh macro shock + confirmation";
+    context = "Macro + sentiment aligned";
   }
   else if (adjusted >= 6) {
     bias = "MODERATE USD BULLISH";
-    context = "Active but stabilizing";
+    context = "Partial alignment";
   }
   else if (adjusted >= 4) {
     bias = "NEUTRAL";
-    context = "Reaction fading";
+    context = "Conflicted market";
   }
   else {
     bias = "USD BEARISH";
-    context = "Market absorbed shock";
+    context = "Weak macro + sentiment drag";
   }
 
   return { bias, context, adjusted };
@@ -117,11 +133,12 @@ function run() {
       nfp,
       cpi,
       weights,
+      data.sentiment,
       data.timeSinceEventMin
     );
 
     document.getElementById("status").innerText =
-      "REACTION ENGINE ACTIVE";
+      "SENTIMENT + REGIME ENGINE ACTIVE";
 
     document.getElementById("nfp").innerText =
       `NFP Score: ${nfp}`;
