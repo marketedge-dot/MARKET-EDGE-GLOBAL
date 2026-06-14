@@ -1,100 +1,75 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge Dashboard</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      padding: 20px;
-    }
-
-    .title {
-      font-size: 26px;
-      font-weight: bold;
-      background: linear-gradient(90deg, #22c55e, #38bdf8, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 12px;
-      border: 1px solid #334155;
-    }
-
-    .label {
-      color: #94a3b8;
-      font-size: 14px;
-    }
-
-    .value {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 5px;
-    }
-
-    .green { color: #22c55e; }
-    .red { color: #ef4444; }
-    .amber { color: #f59e0b; }
-  </style>
-</head>
-
-<body>
-
-<div class="title">MarketEdge Dashboard</div>
-
-<div class="box">
-  <div class="label">System Status</div>
-  <div class="value green" id="status">ACTIVE</div>
-</div>
-
-<div class="box">
-  <div class="label">NFP Signal</div>
-  <div class="value amber" id="nfp">Loading...</div>
-</div>
-
-<div class="box">
-  <div class="label">CPI Signal</div>
-  <div class="value amber" id="cpi">Loading...</div>
-</div>
-
-<div class="box">
-  <div class="label">Market Bias</div>
-  <div class="value" id="bias">Calculating...</div>
-</div>
-
-<div class="box">
-  <div class="label">XAUUSD Impact</div>
-  <div class="value" id="gold">Analyzing...</div>
-</div>
-
 <script>
-let nfp = 6;
-let cpi = 4;
 
-let total = nfp + cpi;
+// 1. STRUCTURED DATA MODEL (this is how real systems think)
+const data = {
+  nfp: {
+    current: 175000,
+    previous: 150000
+  },
+  cpi: {
+    current: 3.1,
+    previous: 3.4
+  }
+};
 
-let bias = "NEUTRAL";
+// 2. CALCULATE REAL ECONOMIC CHANGE (not random scores)
+function calculateChange(current, previous) {
+  return current - previous;
+}
 
-if (total >= 10) bias = "STRONG USD BULLISH";
-else if (total >= 7) bias = "MODERATE USD BULLISH";
-else if (total >= 4) bias = "NEUTRAL";
-else bias = "USD BEARISH";
+// 3. NFP IMPACT ENGINE
+function nfpImpact(nfp) {
+  let change = calculateChange(nfp.current, nfp.previous);
 
-document.getElementById("nfp").innerText = "Score: " + nfp;
-document.getElementById("cpi").innerText = "Score: " + cpi;
-document.getElementById("bias").innerText = bias;
+  if (change > 20000) return { score: 3, label: "VERY STRONG JOBS" };
+  if (change > 0) return { score: 2, label: "STABLE JOBS" };
+  return { score: 1, label: "WEAK JOBS" };
+}
 
-document.getElementById("gold").innerText =
-  bias.includes("BULLISH")
-    ? "XAUUSD → DOWN 🔻"
-    : "XAUUSD → UP 🔺";
+// 4. CPI IMPACT ENGINE
+function cpiImpact(cpi) {
+  let change = calculateChange(cpi.current, cpi.previous);
+
+  if (change < 0) return { score: 3, label: "DISINFLATION (USD STRONG)" };
+  if (change === 0) return { score: 2, label: "STABLE INFLATION" };
+  return { score: 1, label: "INFLATION PRESSURE" };
+}
+
+// 5. MARKET BIAS ENGINE (THIS IS YOUR CORE LOGIC)
+function getBias(totalScore) {
+  if (totalScore >= 5) return "STRONG USD BULLISH";
+  if (totalScore === 4) return "MODERATE USD BULLISH";
+  if (totalScore === 3) return "NEUTRAL";
+  return "USD BEARISH";
+}
+
+// 6. RUN ENGINE
+function run() {
+
+  const nfp = nfpImpact(data.nfp);
+  const cpi = cpiImpact(data.cpi);
+
+  const total = nfp.score + cpi.score;
+  const bias = getBias(total);
+
+  // UI OUTPUT
+  document.getElementById("status").innerText = "ENGINE ACTIVE";
+
+  document.getElementById("nfp").innerHTML =
+    nfp.label + " (Score: " + nfp.score + ")";
+
+  document.getElementById("cpi").innerHTML =
+    cpi.label + " (Score: " + cpi.score + ")";
+
+  document.getElementById("bias").innerHTML =
+    "<b>" + bias + "</b>";
+
+  document.getElementById("gold").innerHTML =
+    bias.includes("BULLISH")
+      ? "XAUUSD → DOWN 🔻 (USD STRENGTH)"
+      : "XAUUSD → UP 🔺 (USD WEAKNESS)";
+}
+
+run();
+
 </script>
-
-</body>
-</html>
