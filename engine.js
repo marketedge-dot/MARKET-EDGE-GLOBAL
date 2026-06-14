@@ -1,6 +1,53 @@
-console.log("MarketEdge API-Ready Engine Loaded");
+console.log("MarketEdge FRED Connected Engine Loaded");
 
-function getData() {
+// ⚠️ YOUR FRED API KEY (keep private in real deployment)
+const FRED_API_KEY = "PASTE_YOUR_KEY_HERE";
+
+// ===============================
+// FETCH REAL CPI FROM FRED
+// ===============================
+async function fetchCPI() {
+  try {
+
+    const url =
+      "https://api.stlouisfed.org/fred/series/observations" +
+      "?series_id=CPIAUCSL" +
+      "&api_key=" + FRED_API_KEY +
+      "&file_type=json" +
+      "&sort_order=desc" +
+      "&limit=5";
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.observations || data.observations.length === 0) {
+      throw new Error("No CPI data received");
+    }
+
+    const latest = data.observations[0].value;
+
+    return parseFloat(latest);
+
+  } catch (e) {
+    console.error("CPI fetch error:", e);
+    return null;
+  }
+}
+
+// ===============================
+// SAFE HANDLER
+// ===============================
+function safe(v, fallback = 0) {
+  return v === null || v === undefined ? fallback : v;
+}
+
+// ===============================
+// ENGINE INPUT
+// ===============================
+async function getData() {
+
+  const cpiValue = await fetchCPI();
+
   return {
     regime: "risk_off",
 
@@ -9,14 +56,13 @@ function getData() {
       greed: 0.35
     },
 
-    // API READY STRUCTURE (future FRED/BLS connection)
     nfp: {
       actual: null,
       expected: null
     },
 
     cpi: {
-      actual: null,
+      actual: cpiValue,
       expected: null
     },
 
@@ -24,17 +70,16 @@ function getData() {
   };
 }
 
-// SAFE VALUE HANDLER
-function safe(v, fallback = 0) {
-  return v === null || v === undefined ? fallback : v;
-}
-
-// SURPRISE MODEL
+// ===============================
+// SURPRISE MODEL (future ready)
+// ===============================
 function surprise(actual, expected) {
   return safe(actual) - safe(expected);
 }
 
-// REGIME WEIGHTS
+// ===============================
+// WEIGHTS BY REGIME
+// ===============================
 function getWeights(regime) {
 
   if (regime === "inflation_focus") {
@@ -48,52 +93,58 @@ function getWeights(regime) {
   return { cpi: 1.5, nfp: 1.5 };
 }
 
-// NFP SCORING
-function scoreNFP(nfp) {
-  let s = surprise(nfp.actual, nfp.expected);
-
-  if (s > 20000) return 4;
-  if (s > 0) return 3;
-  return 1;
-}
-
-// CPI SCORING
+// ===============================
+// CPI SCORING (REAL DATA MODE)
+// ===============================
 function scoreCPI(cpi) {
-  let s = surprise(cpi.actual, cpi.expected);
 
-  if (s < -0.2) return 4;
-  if (s < 0) return 3;
-  if (s === 0) return 2;
-  return 1;
+  let value = safe(cpi.actual);
+
+  // simplified inflation pressure mapping
+  if (value >= 4.0) return 1; // high inflation = USD pressure risk
+  if (value >= 3.0) return 2;
+  if (value >= 2.0) return 3;
+  return 4; // low inflation = USD strong
 }
 
+// ===============================
+// NFP PLACEHOLDER
+// ===============================
+function scoreNFP(nfp) {
+  return 2; // neutral until real API added
+}
+
+// ===============================
 // TIME DECAY
+// ===============================
 function timeDecay(score, minutes) {
   if (minutes < 5) return score * 1.25;
-  if (minutes < 30) return score * 1.0;
+  if (minutes < 30) return score;
   if (minutes < 120) return score * 0.7;
   return score * 0.4;
 }
 
-// SENTIMENT IMPACT
+// ===============================
+// SENTIMENT BOOST
+// ===============================
 function sentimentBoost(fear) {
   if (fear > 0.7) return 1.3;
   if (fear > 0.4) return 1.1;
   return 1.0;
 }
 
-// FINAL DECISION ENGINE (PROBABILITY BASED)
-function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
+// ===============================
+// MAIN ENGINE
+// ===============================
+function riskFilter(cpiScore, weights, sentiment, minutes) {
 
-  let raw =
-    (cpiScore * weights.cpi) +
-    (nfpScore * weights.nfp);
+  let raw = cpiScore * weights.cpi;
 
   let decayed = timeDecay(raw, minutes);
 
   let adjusted = decayed * sentimentBoost(sentiment.fear);
 
-  let usdStrengthProb = Math.min(95, Math.max(5, adjusted * 12.5));
+  let usdStrengthProb = Math.min(95, Math.max(5, adjusted * 15));
   let usdWeakProb = 100 - usdStrengthProb;
 
   let bias = "";
@@ -101,55 +152,59 @@ function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
 
   if (usdStrengthProb >= 65) {
     bias = "USD STRONG BIAS";
-    context = "High probability USD strength";
+    context = "Low inflation supports USD strength";
   }
   else if (usdStrengthProb >= 55) {
     bias = "USD MODERATE BIAS";
-    context = "Slight USD advantage";
+    context = "Mild macro support";
   }
   else if (usdStrengthProb >= 45) {
     bias = "NO CLEAR EDGE";
-    context = "Balanced macro conditions";
+    context = "Market balanced";
   }
   else {
     bias = "USD WEAK BIAS";
-    context = "Higher probability USD weakness";
+    context = "High inflation pressure weakens USD";
   }
 
   return {
     bias,
     context,
     usdStrengthProb: usdStrengthProb.toFixed(1),
-    usdWeakProb: usdWeakProb.toFixed(1)
+    usdWeakProb: usdWeakProb.toFixed(1),
+    cpi: cpiScore
   };
 }
 
-// MAIN RUN
-function run() {
+// ===============================
+// RUN ENGINE
+// ===============================
+async function run() {
+
   try {
 
-    const data = getData();
+    const data = await getData();
+
     const weights = getWeights(data.regime);
 
-    const nfp = scoreNFP(data.nfp);
-    const cpi = scoreCPI(data.cpi);
+    const cpiScore = scoreCPI(data.cpi);
+    const nfpScore = scoreNFP(data.nfp);
 
     const result = riskFilter(
-      nfp,
-      cpi,
+      cpiScore,
       weights,
       data.sentiment,
       12
     );
 
     document.getElementById("status").innerText =
-      "MARKETEDGE ENGINE ACTIVE (API READY)";
+      "MARKETEDGE LIVE CPI ENGINE ACTIVE";
 
     document.getElementById("nfp").innerText =
-      `NFP Score: ${nfp}`;
+      `NFP: Waiting for API integration`;
 
     document.getElementById("cpi").innerText =
-      `CPI Score: ${cpi}`;
+      `CPI (FRED): ${data.cpi.actual}`;
 
     document.getElementById("bias").innerText =
       `${result.bias} | ${result.context}`;
