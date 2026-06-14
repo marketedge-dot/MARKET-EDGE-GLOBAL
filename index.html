@@ -1,97 +1,78 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge Safe Mode</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      padding: 20px;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .green { color: #22c55e; }
-    .red { color: #ef4444; }
-    .amber { color: #f59e0b; }
-  </style>
-</head>
-
-<body>
-
-<div class="title">MarketEdge SAFE MODE</div>
-
-<div class="box">
-  <p id="status">Loading system...</p>
-</div>
-
-<div class="box">
-  <p id="nfp">NFP loading...</p>
-  <p id="cpi">CPI loading...</p>
-</div>
-
-<div class="box">
-  <p id="bias">Bias loading...</p>
-</div>
-
-<div class="box">
-  <p id="gold">Gold impact loading...</p>
-</div>
-
 <script>
-try {
 
-  // SIMPLE SAFE DATA
-  let nfpCurrent = 175000;
-  let nfpPrevious = 150000;
+function getData() {
+  // This is now your "data input layer"
+  // Later we replace this with real APIs
 
-  let cpiCurrent = 3.1;
-  let cpiPrevious = 3.4;
+  return {
+    nfp: {
+      value: 0,
+      previous: 0,
+      surprise: 0
+    },
+    cpi: {
+      value: 0,
+      previous: 0,
+      surprise: 0
+    }
+  };
+}
 
-  let nfpChange = nfpCurrent - nfpPrevious;
-  let cpiChange = cpiCurrent - cpiPrevious;
+function calculateImpact(value, previous) {
+  return value - previous;
+}
 
-  let nfpScore = nfpChange > 0 ? 2 : 1;
-  let cpiScore = cpiChange < 0 ? 2 : 1;
+function scoreNFP(nfp) {
+  let surprise = calculateImpact(nfp.value, nfp.previous);
 
-  let total = nfpScore + cpiScore;
+  if (surprise > 20000) return { score: 3, label: "VERY STRONG JOBS" };
+  if (surprise > 0) return { score: 2, label: "POSITIVE JOBS" };
+  return { score: 1, label: "WEAK JOBS" };
+}
 
-  let bias = "NEUTRAL";
+function scoreCPI(cpi) {
+  let surprise = calculateImpact(cpi.value, cpi.previous);
 
-  if (total >= 4) bias = "STRONG USD BULLISH";
-  else if (total === 3) bias = "MODERATE USD BULLISH";
-  else bias = "USD WEAK";
+  if (surprise < 0) return { score: 3, label: "DISINFLATION (USD STRONG)" };
+  if (surprise === 0) return { score: 2, label: "STABLE INFLATION" };
+  return { score: 1, label: "INFLATION PRESSURE" };
+}
 
-  document.getElementById("status").innerText = "SYSTEM RUNNING OK";
+function getBias(total) {
+  if (total >= 5) return "STRONG USD BULLISH";
+  if (total === 4) return "MODERATE USD BULLISH";
+  if (total === 3) return "NEUTRAL";
+  return "USD BEARISH";
+}
 
-  document.getElementById("nfp").innerText = "NFP Score: " + nfpScore;
-  document.getElementById("cpi").innerText = "CPI Score: " + cpiScore;
+function run() {
 
-  document.getElementById("bias").innerHTML = "<b>" + bias + "</b>";
+  const data = getData();
 
-  document.getElementById("gold").innerText =
+  const nfp = scoreNFP(data.nfp);
+  const cpi = scoreCPI(data.cpi);
+
+  const total = nfp.score + cpi.score;
+
+  const bias = getBias(total);
+
+  document.getElementById("status").innerText = "ENGINE READY (INPUT MODE)";
+
+  document.getElementById("nfp").innerHTML =
+    nfp.label + " | Score: " + nfp.score;
+
+  document.getElementById("cpi").innerHTML =
+    cpi.label + " | Score: " + cpi.score;
+
+  document.getElementById("bias").innerHTML =
+    "<b>" + bias + "</b>";
+
+  document.getElementById("gold").innerHTML =
     bias.includes("BULLISH")
       ? "XAUUSD → DOWN 🔻"
       : "XAUUSD → UP 🔺";
-
-} catch (e) {
-  document.body.innerHTML =
-    "<h2 style='color:red'>ERROR:</h2><pre>" + e.message + "</pre>";
 }
-</script>
 
-</body>
-</html>
+run();
+
+</script>
