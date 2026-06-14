@@ -1,13 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>MarketEdge</title>
+  <title>MarketEdge Dashboard</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .box {
+      background: #1e293b;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .signal {
+      font-size: 18px;
+      color: #22c55e;
+    }
+
+    .warn {
+      color: #f59e0b;
+    }
+
+    .bad {
+      color: #ef4444;
+    }
+  </style>
 </head>
+
 <body>
 
-<h1>Welcome to MarketEdge</h1>
+  <div class="title">MarketEdge Dashboard</div>
 
-<p>My trading platform is coming soon.</p>
+  <div class="box">
+    <h3>Market Bias</h3>
+    <div class="signal">WAITING FOR DATA</div>
+  </div>
+
+  <div class="box">
+    <h3>NFP Forecast</h3>
+    <p class="warn">No engine connected yet</p>
+  </div>
+
+  <div class="box">
+    <h3>CPI Forecast</h3>
+    <p class="warn">No engine connected yet</p>
+  </div>
+
+  <div class="box">
+    <h3>XAUUSD Impact</h3>
+    <p class="bad">Not active</p>
+  </div>
 
 </body>
 </html>
