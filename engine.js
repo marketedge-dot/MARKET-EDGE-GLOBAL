@@ -1,4 +1,4 @@
-console.log("MarketEdge Full Macro Engine (CPI + NFP Live) Loaded");
+console.log("MarketEdge Pre-News Macro Engine Loaded");
 
 // ===============================
 // CONFIG
@@ -6,11 +6,10 @@ console.log("MarketEdge Full Macro Engine (CPI + NFP Live) Loaded");
 const FRED_API_KEY = "PASTE_YOUR_FRED_KEY_HERE";
 
 // ===============================
-// CPI (FRED)
+// CPI FETCH (FRED)
 // ===============================
 async function fetchCPI() {
   try {
-
     const url =
       "https://api.stlouisfed.org/fred/series/observations" +
       "?series_id=CPIAUCSL" +
@@ -29,7 +28,7 @@ async function fetchCPI() {
 }
 
 // ===============================
-// NFP (BLS)
+// NFP FETCH (BLS)
 // ===============================
 async function fetchNFP() {
   try {
@@ -59,7 +58,7 @@ async function fetchNFP() {
 }
 
 // ===============================
-// SAFE
+// SAFE VALUE
 // ===============================
 function safe(v) {
   return v === null || v === undefined ? 0 : v;
@@ -74,7 +73,7 @@ async function getData() {
   const nfp = await fetchNFP();
 
   return {
-    regime: "risk_off",
+    regime: "inflation_focus",
 
     sentiment: {
       fear: 0.65,
@@ -90,25 +89,25 @@ async function getData() {
       previous: nfp.previous
     },
 
-    time: Date.now()
+    timestamp: Date.now()
   };
 }
 
 // ===============================
-// CPI SCORE
+// CPI MODEL
 // ===============================
 function scoreCPI(cpi) {
 
   let v = safe(cpi.actual);
 
-  if (v >= 4.0) return 1;
+  if (v >= 4.0) return 1; // high inflation
   if (v >= 3.0) return 2;
   if (v >= 2.0) return 3;
-  return 4;
+  return 4; // low inflation = USD strong environment
 }
 
 // ===============================
-// NFP SCORE
+// NFP MODEL
 // ===============================
 function scoreNFP(nfp) {
 
@@ -120,7 +119,7 @@ function scoreNFP(nfp) {
 }
 
 // ===============================
-// WEIGHTS
+// REGIME WEIGHTS
 // ===============================
 function getWeights(regime) {
 
@@ -136,7 +135,39 @@ function getWeights(regime) {
 }
 
 // ===============================
-// ENGINE CORE
+// PRE-NEWS GOAL ZONES (IMPORTANT PART)
+// ===============================
+
+// CPI goal ranges (market expectation zones)
+function cpiGoal(cpi) {
+
+  if (cpi >= 4.0) return "HIGH INFLATION ZONE";
+  if (cpi >= 3.0) return "ELEVATED INFLATION ZONE";
+  if (cpi >= 2.0) return "STABLE INFLATION ZONE";
+  return "LOW INFLATION ZONE (USD SUPPORTIVE)";
+}
+
+// NFP goal ranges
+function nfpGoal(nfp) {
+
+  let change = safe(nfp.actual) - safe(nfp.previous);
+
+  if (change > 200) return "STRONG JOBS GROWTH ZONE";
+  if (change > 0) return "MODERATE JOBS GROWTH ZONE";
+  return "WEAK JOBS ZONE";
+}
+
+// ===============================
+// SENTIMENT IMPACT
+// ===============================
+function sentimentBoost(fear) {
+  if (fear > 0.7) return 1.3;
+  if (fear > 0.4) return 1.1;
+  return 1.0;
+}
+
+// ===============================
+// MAIN ENGINE (PRE-NEWS BIAS MODEL)
 // ===============================
 function riskFilter(cpiScore, nfpScore, weights, sentiment) {
 
@@ -144,20 +175,19 @@ function riskFilter(cpiScore, nfpScore, weights, sentiment) {
     (cpiScore * weights.cpi) +
     (nfpScore * weights.nfp);
 
-  let fearBoost = sentiment.fear > 0.7 ? 1.3 : 1.0;
+  let adjusted = raw * sentimentBoost(sentiment.fear);
 
-  let adjusted = raw * fearBoost;
+  let usdProb = Math.min(95, Math.max(5, adjusted * 12));
 
-  let prob = Math.min(95, Math.max(5, adjusted * 12));
-
-  let bias = prob >= 60 ? "USD STRONG BIAS"
-            : prob >= 50 ? "NEUTRAL"
-            : "USD WEAK BIAS";
+  let bias =
+    usdProb >= 60 ? "USD BULLISH PRE-BIAS" :
+    usdProb <= 40 ? "USD BEARISH PRE-BIAS" :
+    "NO CLEAR PRE-BIAS";
 
   return {
     bias,
-    usdStrength: prob.toFixed(1),
-    usdWeak: (100 - prob).toFixed(1)
+    usdStrength: usdProb.toFixed(1),
+    usdWeak: (100 - usdProb).toFixed(1)
   };
 }
 
@@ -173,19 +203,24 @@ async function run() {
   const cpiScore = scoreCPI(data.cpi);
   const nfpScore = scoreNFP(data.nfp);
 
-  const result = riskFilter(cpiScore, nfpScore, weights, data.sentiment);
+  const result = riskFilter(
+    cpiScore,
+    nfpScore,
+    weights,
+    data.sentiment
+  );
 
   document.getElementById("status").innerText =
-    "MARKETEDGE LIVE MACRO ENGINE ACTIVE";
-
-  document.getElementById("nfp").innerText =
-    `NFP: ${data.nfp.actual}`;
+    "MARKETEDGE PRE-NEWS ENGINE ACTIVE";
 
   document.getElementById("cpi").innerText =
-    `CPI: ${data.cpi.actual}`;
+    `CPI: ${data.cpi.actual} | ${cpiGoal(data.cpi)}`;
+
+  document.getElementById("nfp").innerText =
+    `NFP: ${data.nfp.actual} | ${nfpGoal(data.nfp)}`;
 
   document.getElementById("bias").innerText =
-    result.bias;
+    `${result.bias}`;
 
   document.getElementById("gold").innerText =
     `USD Strength ${result.usdStrength}% | USD Weak ${result.usdWeak}%`;
