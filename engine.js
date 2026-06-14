@@ -1,11 +1,11 @@
-console.log("MarketEdge Sentiment Regime Engine Loaded");
+console.log("MarketEdge Probability Engine Loaded");
 
 function getData() {
   return {
-    regime: "risk_off", // risk_on | risk_off | inflation_focus | growth_focus
+    regime: "risk_off",
 
     sentiment: {
-      fear: 0.7,   // 0 → calm, 1 → panic
+      fear: 0.7,
       greed: 0.3
     },
 
@@ -28,7 +28,7 @@ function surprise(actual, expected) {
   return actual - expected;
 }
 
-// REGIME WEIGHTS (CORE LOGIC SHIFT)
+// REGIME WEIGHTS
 function getWeights(regime) {
 
   if (regime === "inflation_focus") {
@@ -39,27 +39,12 @@ function getWeights(regime) {
     return { cpi: 1.0, nfp: 2.2 };
   }
 
-  if (regime === "risk_off") {
-    return { cpi: 1.5, nfp: 1.5 };
-  }
-
   return { cpi: 1.5, nfp: 1.5 };
 }
 
-// SENTIMENT IMPACT MODIFIER (NEW)
-function sentimentModifier(sentiment) {
-
-  let panic = sentiment.fear;
-
-  if (panic > 0.7) return 1.3;   // panic amplifies moves
-  if (panic > 0.4) return 1.1;
-  return 1.0;
-}
-
-// EVENT SCORING
+// SCORING
 function scoreNFP(nfp) {
   let s = surprise(nfp.actual, nfp.expected);
-
   if (s > 20000) return 4;
   if (s > 0) return 3;
   return 1;
@@ -67,7 +52,6 @@ function scoreNFP(nfp) {
 
 function scoreCPI(cpi) {
   let s = surprise(cpi.actual, cpi.expected);
-
   if (s < -0.2) return 4;
   if (s < 0) return 3;
   if (s === 0) return 2;
@@ -76,11 +60,23 @@ function scoreCPI(cpi) {
 
 // TIME DECAY
 function timeDecay(score, minutes) {
-
   if (minutes < 5) return score * 1.25;
   if (minutes < 30) return score * 1.0;
   if (minutes < 120) return score * 0.7;
   return score * 0.4;
+}
+
+// SENTIMENT IMPACT
+function sentimentBoost(fear) {
+  if (fear > 0.7) return 1.3;
+  if (fear > 0.4) return 1.1;
+  return 1.0;
+}
+
+// PROBABILITY CONVERSION (NEW CORE LOGIC)
+function toProbability(score) {
+  // converts engine score into probability space (0–100)
+  return Math.min(95, Math.max(5, score * 12.5));
 }
 
 // FINAL ENGINE
@@ -90,32 +86,39 @@ function riskFilter(nfpScore, cpiScore, weights, sentiment, minutes) {
     (cpiScore * weights.cpi) +
     (nfpScore * weights.nfp);
 
-  let adjusted = timeDecay(raw, minutes);
+  let decayed = timeDecay(raw, minutes);
 
-  // sentiment amplification
-  adjusted = adjusted * sentimentModifier(sentiment);
+  let adjusted = decayed * sentimentBoost(sentiment.fear);
+
+  let usdStrengthProb = toProbability(adjusted);
+  let usdWeaknessProb = 100 - usdStrengthProb;
 
   let bias = "";
   let context = "";
 
-  if (adjusted >= 8) {
-    bias = "STRONG USD BULLISH";
-    context = "Macro + sentiment aligned";
+  if (usdStrengthProb >= 65) {
+    bias = "USD STRONG BIAS";
+    context = "High probability USD strength";
   }
-  else if (adjusted >= 6) {
-    bias = "MODERATE USD BULLISH";
-    context = "Partial alignment";
+  else if (usdStrengthProb >= 55) {
+    bias = "USD MODERATE BIAS";
+    context = "Slight edge USD strength";
   }
-  else if (adjusted >= 4) {
-    bias = "NEUTRAL";
-    context = "Conflicted market";
+  else if (usdStrengthProb >= 45) {
+    bias = "NO EDGE";
+    context = "Market balanced";
   }
   else {
-    bias = "USD BEARISH";
-    context = "Weak macro + sentiment drag";
+    bias = "USD WEAK BIAS";
+    context = "Higher probability USD weakness";
   }
 
-  return { bias, context, adjusted };
+  return {
+    bias,
+    context,
+    usdStrengthProb: usdStrengthProb.toFixed(1),
+    usdWeaknessProb: usdWeaknessProb.toFixed(1)
+  };
 }
 
 // RUN
@@ -138,7 +141,7 @@ function run() {
     );
 
     document.getElementById("status").innerText =
-      "SENTIMENT + REGIME ENGINE ACTIVE";
+      "PROBABILITY ENGINE ACTIVE";
 
     document.getElementById("nfp").innerText =
       `NFP Score: ${nfp}`;
@@ -150,9 +153,7 @@ function run() {
       `${result.bias} | ${result.context}`;
 
     document.getElementById("gold").innerText =
-      result.bias.includes("BULLISH")
-        ? "XAUUSD → DOWN 🔻 (USD STRENGTH)"
-        : "XAUUSD → UP 🔺 (USD WEAKNESS)";
+      `USD Strength: ${result.usdStrengthProb}% | USD Weak: ${result.usdWeaknessProb}%`;
 
   } catch (e) {
     document.getElementById("status").innerText =
