@@ -1,88 +1,67 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MarketEdge Dashboard</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f172a;
-      color: white;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .box {
-      background: #1e293b;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-
-    .signal {
-      font-size: 18px;
-      color: #22c55e;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="title">MarketEdge Dashboard</div>
-
-<div class="box">
-  <h3>Market Bias Engine</h3>
-  <div id="bias">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>NFP</h3>
-  <div id="nfp">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>CPI</h3>
-  <div id="cpi">Loading...</div>
-</div>
-
-<div class="box">
-  <h3>XAUUSD Impact</h3>
-  <div id="gold">Loading...</div>
-</div>
-
 <script>
-function run() {
+async function fetchMarketData() {
 
-  let nfpScore = 6;
-  let cpiScore = 4;
+  // STRUCTURED REAL-WORLD FORMAT (we plug APIs later)
+  return {
+    nfp: {
+      value: 175000,
+      strength: "STRONG" // STRONG / WEAK / NEUTRAL
+    },
+    cpi: {
+      value: 3.1,
+      strength: "DISINFLATION"
+    }
+  };
+}
 
-  let total = nfpScore + cpiScore;
+function getColor(strength) {
+  if (strength === "STRONG") return "#22c55e"; // green
+  if (strength === "WEAK") return "#ef4444";   // red
+  return "#f59e0b"; // amber
+}
 
-  let bias = "NEUTRAL";
+function getBias(nfp, cpi) {
 
-  if (total >= 10) bias = "STRONG USD BULLISH";
-  else if (total >= 7) bias = "MODERATE USD BULLISH";
-  else if (total >= 4) bias = "NEUTRAL";
-  else bias = "USD WEAK";
+  let score = 0;
 
-  document.getElementById("nfp").innerText = "Score: " + nfpScore;
-  document.getElementById("cpi").innerText = "Score: " + cpiScore;
-  document.getElementById("bias").innerText = bias;
+  if (nfp.strength === "STRONG") score += 1;
+  if (cpi.strength === "DISINFLATION") score += 1;
 
-  document.getElementById("gold").innerText =
+  if (score >= 2) return "USD STRONG BULLISH";
+  if (score === 1) return "MIXED SIGNALS";
+  return "USD WEAK / RISK OFF";
+}
+
+async function run() {
+
+  const data = await fetchMarketData();
+
+  const bias = getBias(data.nfp, data.cpi);
+
+  // NFP UI
+  document.getElementById("nfp").innerHTML =
+    `<span style="color:${getColor(data.nfp.strength)}">
+      NFP: ${data.nfp.value} (${data.nfp.strength})
+    </span>`;
+
+  // CPI UI
+  document.getElementById("cpi").innerHTML =
+    `<span style="color:${getColor(data.cpi.strength)}">
+      CPI: ${data.cpi.value}% (${data.cpi.strength})
+    </span>`;
+
+  // BIAS UI
+  document.getElementById("bias").innerHTML =
+    `<span style="color:#38bdf8; font-weight:bold">
+      ${bias}
+    </span>`;
+
+  // GOLD IMPACT LOGIC
+  document.getElementById("gold").innerHTML =
     bias.includes("BULLISH")
-      ? "XAUUSD likely DOWN 🔻"
-      : "XAUUSD likely UP 🔺";
+      ? `<span style="color:#ef4444">XAUUSD LIKELY DOWN 🔻</span>`
+      : `<span style="color:#22c55e">XAUUSD LIKELY UP 🔺</span>`;
 }
 
 run();
 </script>
-
-</body>
-</html>
